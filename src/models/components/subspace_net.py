@@ -108,24 +108,27 @@ class SubspaceNet(nn.Module):
         x: torch.Tensor,
         conditioning: Dict[str, torch.Tensor] = None,
         alpha: float = 1.0
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
 
         # Stem
-        x = self.stem(x)
+        x = self.stem_forward(x)
 
         # Dict to keep track
         res_dict = OrderedDict()
 
         # Iterate through layers
-        for layer_name, layer in self.layers.items():
-            x = layer(x)
-            res_dict[layer_name] = x
+        for layer_idx, layer_name in enumerate(self.layer_meta_data.values()):
+            x = self.layer_forward(x, layer_idx)
 
             if conditioning is not None and layer_name in conditioning:
                 x = alpha * x + (1-alpha) * conditioning[layer_name]
 
-        # Head
-        return self.head(x), res_dict
+            res_dict[layer_name] = x
+
+        # Average pool
+        x = x.mean(-1).mean(-1)
+
+        return x, res_dict
 
     def conditioned_forward(
         self,
@@ -147,7 +150,7 @@ class SubspaceNet(nn.Module):
             conditionings[to_layer] = pred_to_layer
 
         # Then condition each layer
-        return self(y, conditionings, alpha=alpha)[0]
+        return self(y, conditionings, alpha=alpha)
 
     def sample_layer_pair_loss(
         self,
@@ -182,15 +185,21 @@ class SubspaceNet(nn.Module):
 
         return loss / n_samples
     
+    def get_mapping_params(self):
+        return nn.ModuleList([
+            self.subspace_encoders,
+            self.subspace_decoders,
+        ]).parameters()
+
+    def get_final_output_size(self):
+        return list(self.layer_meta_data.values())[-1].num_channels
+
     # The following are to be implemented by the subclass
-    def layer_sizes(self) -> Dict[str, LayerMetadata]:
+    def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
         raise NotImplementedError()
 
     def stem_forward(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError()
 
     def layer_forward(self, x: torch.Tensor, layer: str) -> torch.Tensor:
-        raise NotImplementedError()
-
-    def head_forward(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError()

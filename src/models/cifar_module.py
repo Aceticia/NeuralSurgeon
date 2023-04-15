@@ -15,7 +15,6 @@ class CIFARLitModule(LightningModule):
         - Validation loop (validation_step)
         - Test loop (test_step)
         - Prediction Loop (predict_step)
-        - Optimizers and LR Schedulers (configure_optimizers)
 
     Docs:
         https://lightning.ai/docs/pytorch/latest/common/lightning_module.html
@@ -25,7 +24,6 @@ class CIFARLitModule(LightningModule):
         self,
         net: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
-        scheduler: torch.optim.lr_scheduler,
     ):
         super().__init__()
 
@@ -34,6 +32,10 @@ class CIFARLitModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.net = net
+
+        # classifier
+        final_size = self.net.get_final_output_size()
+        self.classifier = torch.nn.Linear(final_size, 10)
 
         # loss function
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -63,19 +65,24 @@ class CIFARLitModule(LightningModule):
 
     def model_step(self, batch: Any):
         x, y = batch
-        logits = self.forward(x)
+        outs = self.forward(x)[0]
+        logits = self.classifier(outs)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
         return loss, preds, y
 
-    def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.model_step(batch)
+    def training_step(self, batch: Any, batch_idx: int, optimizer_idx: int=0):
+        if optimizer_idx == 0:
+            loss, preds, targets = self.model_step(batch)
+        else:
+            # Run the pairwise loss
+            _, res_dict = self.net(batch[0])
+            loss = self.net.sample_layer_loss(res_dict, n_samples=10)
 
         # update and log metrics
         self.train_loss(loss)
         self.train_acc(preds, targets)
         self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
 
         # return loss or backpropagation will fail
         return loss
@@ -112,25 +119,9 @@ class CIFARLitModule(LightningModule):
         pass
 
     def configure_optimizers(self):
-        """Choose what optimizers and learning-rate schedulers to use in your optimization.
-        Normally you'd need one. But in the case of GANs or similar you might have multiple.
-
-        Examples:
-            https://lightning.ai/docs/pytorch/latest/common/lightning_module.html#configure-optimizers
-        """
-        optimizer = self.hparams.optimizer(params=self.parameters())
-        if self.hparams.scheduler is not None:
-            scheduler = self.hparams.scheduler(optimizer=optimizer)
-            return {
-                "optimizer": optimizer,
-                "lr_scheduler": {
-                    "scheduler": scheduler,
-                    "monitor": "val/loss",
-                    "interval": "epoch",
-                    "frequency": 1,
-                },
-            }
-        return {"optimizer": optimizer}
+        optimizer_cls = self.hparams.optimizer(params=self.classifier.parameters())
+        optimizer_mapping = self.hparams.optimizer(params=self.net.get_mapping_params())
+        return optimizer_cls, optimizer_mapping
 
 
 if __name__ == "__main__":
