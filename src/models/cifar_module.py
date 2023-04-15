@@ -1,5 +1,7 @@
 from typing import Any
 
+from itertools import chain
+
 import torch
 from lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
@@ -47,6 +49,7 @@ class CIFARLitModule(LightningModule):
 
         # for averaging loss across batches
         self.train_loss = MeanMetric()
+        self.pred_loss = MeanMetric()
         self.val_loss = MeanMetric()
         self.test_loss = MeanMetric()
 
@@ -65,33 +68,32 @@ class CIFARLitModule(LightningModule):
 
     def model_step(self, batch: Any):
         x, y = batch
-        outs = self.forward(x)[0]
+        outs, res_dict = self.forward(x)
         logits = self.classifier(outs)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        return loss, preds, y, res_dict
 
     def training_step(self, batch: Any, batch_idx: int, optimizer_idx: int=0):
-        if optimizer_idx == 0:
-            loss, preds, targets = self.model_step(batch)
-        else:
-            # Run the pairwise loss
-            _, res_dict = self.net(batch[0])
-            loss = self.net.sample_layer_loss(res_dict, n_samples=10)
+        loss, preds, targets, res_dict = self.model_step(batch)
+        pair_loss = self.net.sample_layer_pair_loss(res_dict, n_samples=10)
 
         # update and log metrics
         self.train_loss(loss)
+        self.pred_loss(pair_loss)
         self.train_acc(preds, targets)
         self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/paired_pred_loss", self.pred_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=False)
 
         # return loss or backpropagation will fail
-        return loss
+        return loss+pair_loss
 
     def on_train_epoch_end(self):
         pass
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.model_step(batch)
+        loss, preds, targets, _ = self.model_step(batch)
 
         # update and log metrics
         self.val_loss(loss)
@@ -107,7 +109,7 @@ class CIFARLitModule(LightningModule):
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
 
     def test_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.model_step(batch)
+        loss, preds, targets, _ = self.model_step(batch)
 
         # update and log metrics
         self.test_loss(loss)
@@ -119,9 +121,13 @@ class CIFARLitModule(LightningModule):
         pass
 
     def configure_optimizers(self):
-        optimizer_cls = self.hparams.optimizer(params=self.classifier.parameters())
-        optimizer_mapping = self.hparams.optimizer(params=self.net.get_mapping_params())
-        return optimizer_cls, optimizer_mapping
+        optimizer = self.hparams.optimizer(
+            params=chain(
+                self.classifier.parameters(),
+                self.net.get_mapping_params()
+            )
+        )
+        return optimizer
 
 
 if __name__ == "__main__":

@@ -23,6 +23,11 @@ class ResNetModel(SubspaceNet):
         self.layer3 = resnet_model.layer3
         self.layer4 = resnet_model.layer4
 
+        # Freeze the conv
+        for m in [self.conv1, self.bn1, self.layer1, self.layer2, self.layer3, self.layer4]:
+            for param in m.parameters():
+                param.requires_grad = False
+
     def layer_forward(self, x: torch.Tensor, layer: str) -> torch.Tensor:
         if layer == "layer1":
             return self.layer1(x)

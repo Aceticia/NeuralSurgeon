@@ -117,8 +117,8 @@ class SubspaceNet(nn.Module):
         res_dict = OrderedDict()
 
         # Iterate through layers
-        for layer_idx, layer_name in enumerate(self.layer_meta_data.values()):
-            x = self.layer_forward(x, layer_idx)
+        for layer_name in self.layer_meta_data.keys():
+            x = self.layer_forward(x, layer_name)
 
             if conditioning is not None and layer_name in conditioning:
                 x = alpha * x + (1-alpha) * conditioning[layer_name]

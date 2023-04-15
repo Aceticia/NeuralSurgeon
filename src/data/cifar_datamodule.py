@@ -37,7 +37,7 @@ class CIFARDataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/",
-        train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
+        train_val_test_split: Tuple[int, int, int] = (50000, 5000, 5000),
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -50,7 +50,7 @@ class CIFARDataModule(LightningDataModule):
 
         # data transformations
         self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            [transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.25,0.25,0.25)), transforms.Resize(128)]
         )
 
         self.data_train: Optional[Dataset] = None
