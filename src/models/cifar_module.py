@@ -88,7 +88,7 @@ class CIFARLitModule(LightningModule):
         self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=False)
 
         # return loss or backpropagation will fail
-        return loss-pair_loss
+        return loss+pair_loss
 
     def on_train_epoch_end(self):
         pass
