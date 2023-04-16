@@ -51,7 +51,7 @@ class ResNet18Model(ResNetModel):
     def __init__(self, subspace_size: int) -> None:
         super().__init__(
             subspace_size=subspace_size,
-            resnet_model=resnet18("IMAGENET1K_V1")
+            resnet_model=resnet18(weights="IMAGENET1K_V1")
         )
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
