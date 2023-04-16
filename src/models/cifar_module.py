@@ -31,7 +31,7 @@ class CIFARLitModule(LightningModule):
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=["net"])
 
         self.net = net
 
@@ -51,6 +51,7 @@ class CIFARLitModule(LightningModule):
         self.train_loss = MeanMetric()
         self.pred_loss = MeanMetric()
         self.val_loss = MeanMetric()
+        self.val_pred_loss = MeanMetric()
         self.test_loss = MeanMetric()
 
         # for tracking best so far validation accuracy
@@ -82,23 +83,26 @@ class CIFARLitModule(LightningModule):
         self.train_loss(loss)
         self.pred_loss(pair_loss)
         self.train_acc(preds, targets)
-        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log("train/paired_pred_loss", self.pred_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=False)
 
         # return loss or backpropagation will fail
-        return loss+pair_loss
+        return loss-pair_loss
 
     def on_train_epoch_end(self):
         pass
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets, _ = self.model_step(batch)
+        loss, preds, targets, res_dict = self.model_step(batch)
+        pair_loss = self.net.sample_layer_pair_loss(res_dict, n_samples=100)
 
         # update and log metrics
         self.val_loss(loss)
+        self.val_pred_loss(pair_loss)
         self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/paired_pred_loss", self.val_pred_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self):
