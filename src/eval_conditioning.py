@@ -83,7 +83,8 @@ def evaluate(cfg: DictConfig) -> None:
     layer_names = list(model.net.layer_sizes().keys())
 
     # Keep a matrix of scores
-    scores = torch.zeros(len(layer_names), len(layer_names))
+    score_a_increase = torch.zeros(len(layer_names), len(layer_names))
+    score_b_decrease = torch.zeros(len(layer_names), len(layer_names))
     count = 0
 
     # Initialize datamodule
@@ -100,6 +101,15 @@ def evaluate(cfg: DictConfig) -> None:
 
         # Use the rolled inputs for 2nd round of forward
         y = x.roll(1, 0)
+        target_y = target.roll(1, 0)
+
+        # Find the logits for original label and condition label in the original pass
+        a_x = out_x[torch.arange(len(out_x)), target]
+        b_x = out_x[torch.arange(len(out_x)), target_y]
+
+        # Find the logits for original label and condition label in the unconditioned pass
+        a_y = out_y[torch.arange(len(out_y)), target]
+        b_y = out_y[torch.arange(len(out_y)), target_y]
 
         # Iterate over pairs of layers
         for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
@@ -109,21 +119,30 @@ def evaluate(cfg: DictConfig) -> None:
                 layer_conditions=[(layer_from, layer_to)],
                 alpha=cfg.alpha
             )
+            
+            # Find the logits for original label and condition label in the conditioned pass
+            a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]
+            b_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target_y]
 
-            # Find the logits
-            d1 = (out_y - out_y_tilde).abs()
-            d2 = (out_y_tilde - out_x).abs()
-            scores[idx_from, idx_to] += (d1 / (d2 + 1e-8)).mean()
+            # Find the increase in conditioned label logit
+            inc_a = (a_y_c - a_y) / (a_x - a_y)
+
+            # Find the decrease in original label logit
+            dec_b = (b_y_c - b_x) / (b_y - b_x)
+
+            # Add to the matrix
+            score_a_increase[idx_from, idx_to] += inc_a.mean()
+            score_b_decrease[idx_from, idx_to] += dec_b.mean()
             count += 1
 
     # Divide by the number of test batches
-    scores /= count
+    score_a_increase /= count
+    score_b_decrease /= count
 
     # Store the matrix and name with the checkpoint
     p = Path(cfg.ckpt_path)
-    torch.save((scores, layer_names), p.parent / f"{p.stem}_conditioning_alpha{cfg.alpha}.pt")
-
-    metric_dict = {"matrix": scores}
+    torch.save((score_a_increase, score_b_decrease, layer_names), p.parent / f"{p.stem}_conditioning_alpha{cfg.alpha}.pt")
+    metric_dict = {"a_increase": score_a_increase, "b_decrease": score_b_decrease}
 
     return metric_dict, object_dict
 
