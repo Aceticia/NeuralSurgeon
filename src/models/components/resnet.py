@@ -56,10 +56,10 @@ class ResNet18Model(ResNetModel):
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
         return OrderedDict(
-            layer1=LayerMetadata(8, 64),
-            layer2=LayerMetadata(4, 128),
-            layer3=LayerMetadata(2, 256),
-            layer4=LayerMetadata(1, 512),
+            layer1=LayerMetadata(32, 64),
+            layer2=LayerMetadata(16, 128),
+            layer3=LayerMetadata(8,  256),
+            layer4=LayerMetadata(4,  512),
         )
 
 class ResNet50Model(ResNetModel):
@@ -71,8 +71,8 @@ class ResNet50Model(ResNetModel):
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
         return OrderedDict(
-            layer1=LayerMetadata(8, 64),
-            layer2=LayerMetadata(4, 128),
-            layer3=LayerMetadata(2, 256),
-            layer4=LayerMetadata(1, 512),
+            layer1=LayerMetadata(32, 64),
+            layer2=LayerMetadata(16, 128),
+            layer3=LayerMetadata(8,  256),
+            layer4=LayerMetadata(4,  512),
         )
