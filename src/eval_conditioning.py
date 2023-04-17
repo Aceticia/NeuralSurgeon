@@ -11,7 +11,7 @@ from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
 from tqdm import tqdm
-from itertools import combinations
+from itertools import permutations
 
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
@@ -106,19 +106,20 @@ def evaluate(cfg: DictConfig) -> None:
         target_y = target.roll(1, 0)
 
         # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in combinations(enumerate(layer_names), 2):
+        for (idx_from, layer_from), (idx_to, layer_to) in permutations(enumerate(layer_names), 2):
             out_y, _ = model.net.conditioned_forward_single(
                 x=y,
                 condition_dict=res_dict,
-                layer_conditions=[layer_from, layer_to],
+                layer_conditions=[(layer_from, layer_to)],
                 alpha=cfg.alpha
             )
 
             # Find the logits
             y_pred_logits = out_y[torch.arange(len(target_y)), target_y]
-
             d1 = (x_target_logits - y_pred_logits).abs()
             d2 = (y_pred_logits - y_target_logits).abs()
+
+            print(layer_from, layer_to, (d1 - d2).mean())
 
             # if d1-d2 < 0, then x is able to influence y.
             scores[idx_from, idx_to] += (d1 - d2).mean()
