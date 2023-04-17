@@ -101,7 +101,7 @@ def evaluate(cfg: DictConfig) -> None:
         # Iterate over pairs of layers
         for (idx_from, layer_from), (idx_to, layer_to) in combinations(enumerate(layer_names), 2):
             target = res_dict[layer_to]
-            pred = model.get_pairwise_predictions(res_dict, layer_from, layer_to)
+            pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
 
             # Find MAPE
             diff = mean_absolute_percentage_error(pred, target)
