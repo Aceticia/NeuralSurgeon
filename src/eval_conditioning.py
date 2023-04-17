@@ -130,7 +130,7 @@ def evaluate(cfg: DictConfig) -> None:
 
     # Store the matrix and name with the checkpoint
     p = Path(cfg.ckpt_path)
-    torch.save((scores, layer_names), p.parent / f"{p.stem}_conditioning.pt")
+    torch.save((scores, layer_names), p.parent / f"{p.stem}_conditioning_alpha{cfg.alpha}.pt")
 
     metric_dict = {"matrix": scores}
 
