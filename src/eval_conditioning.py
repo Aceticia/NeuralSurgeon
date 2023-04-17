@@ -119,8 +119,6 @@ def evaluate(cfg: DictConfig) -> None:
             d1 = (x_target_logits - y_pred_logits).abs()
             d2 = (y_pred_logits - y_target_logits).abs()
 
-            print(layer_from, layer_to, (d1 - d2).mean())
-
             # if d1-d2 < 0, then x is able to influence y.
             scores[idx_from, idx_to] += (d1 - d2).mean()
             count += 1
