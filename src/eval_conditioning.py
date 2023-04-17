@@ -96,28 +96,14 @@ def evaluate(cfg: DictConfig) -> None:
 
         # Forward pass
         out_x, res_dict = model(x)
-
-        # Find target logits
-        x_target_logits = out_x[torch.arange(len(target)), target]
-        y_target_logits = x_target_logits.roll(1, 0)
-        d_total = (x_target_logits - y_target_logits).abs()
+        out_y = out_x.roll(1, 0)
 
         # Use the rolled inputs for 2nd round of forward
         y = x.roll(1, 0)
 
-        # Remove where d_total is 0
-        keep_mask = d_total != 0
-        for k in res_dict:
-            res_dict[k] = res_dict[k][keep_mask]
-
-        y = y[keep_mask]
-        target = target[keep_mask]
-        d_total = d_total[keep_mask]
-        y_target_logits = y_target_logits[keep_mask]
-
         # Iterate over pairs of layers
         for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
-            out_y, _ = model.net.conditioned_forward_single(
+            out_y_tilde, _ = model.net.conditioned_forward_single(
                 x=y,
                 condition_dict=res_dict,
                 layer_conditions=[(layer_from, layer_to)],
@@ -125,10 +111,9 @@ def evaluate(cfg: DictConfig) -> None:
             )
 
             # Find the logits
-            y_pred_logits = out_y[torch.arange(len(target)), target]
-            d_change = (y_pred_logits - y_target_logits).abs()
-
-            scores[idx_from, idx_to] += (d_change / d_total).mean()
+            d1 = (out_y - out_y_tilde).abs()
+            d2 = (out_y_tilde - out_x).abs()
+            scores[idx_from, idx_to] += (d1 / (d2 + 1e-8)).mean()
             count += 1
 
     # Divide by the number of test batches
