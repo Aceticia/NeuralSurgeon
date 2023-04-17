@@ -100,9 +100,20 @@ def evaluate(cfg: DictConfig) -> None:
         # Find target logits
         x_target_logits = out_x[torch.arange(len(target)), target]
         y_target_logits = x_target_logits.roll(1, 0)
+        d_total = (x_target_logits - y_target_logits).abs()
 
         # Use the rolled inputs for 2nd round of forward
         y = x.roll(1, 0)
+
+        # Remove where d_total is 0
+        keep_mask = d_total != 0
+        for k in res_dict:
+            res_dict[k] = res_dict[k][keep_mask]
+
+        y = y[keep_mask]
+        target = target[keep_mask]
+        d_total = d_total[keep_mask]
+        y_target_logits = y_target_logits[keep_mask]
 
         # Iterate over pairs of layers
         for (idx_from, layer_from), (idx_to, layer_to) in permutations(enumerate(layer_names), 2):
@@ -115,7 +126,6 @@ def evaluate(cfg: DictConfig) -> None:
 
             # Find the logits
             y_pred_logits = out_y[torch.arange(len(target)), target]
-            d_total = (x_target_logits - y_target_logits).abs()
             d_change = (y_pred_logits - y_target_logits).abs()
 
             scores[idx_from, idx_to] += (d_change / d_total).mean()
