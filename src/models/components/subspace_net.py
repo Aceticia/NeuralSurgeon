@@ -204,7 +204,7 @@ class SubspaceNet(nn.Module):
             # negative = negative.flatten(1)
 
             # Compute the loss
-            loss += (anchor - positive).abs()
+            loss += (anchor - positive).abs().mean()
 
         return loss / n_samples
     
