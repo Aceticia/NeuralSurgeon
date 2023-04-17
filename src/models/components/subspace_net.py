@@ -152,6 +152,18 @@ class SubspaceNet(nn.Module):
 
         # Then condition each layer
         return self(y, conditionings, alpha=alpha)
+    
+    def get_pairwise_predictions(
+        self,
+        layer_activations: Dict[str, torch.Tensor],
+        from_layer: str,
+        to_layer: str
+    ) -> torch.Tensor:
+        """
+        Predict the target layer from the anchor layer.
+        """
+        subspace_from = self.to_subspace(layer_activations[from_layer], from_layer)
+        return self.predict_layer(subspace_from, to_layer)
 
     def sample_layer_pair_loss(
         self,
@@ -167,10 +179,12 @@ class SubspaceNet(nn.Module):
         loss = 0
         for _ in range(n_samples):
             from_layer, to_layer = sample(sorted(layer_activations), 2)
-            subspace_from = self.to_subspace(layer_activations[from_layer], from_layer)
 
-            # Predict the target layer from the subspace
-            anchor = self.predict_layer(subspace_from, to_layer)
+            anchor = self.get_pairwise_predictions(
+                layer_activations,
+                from_layer,
+                to_layer
+            )
             positive = layer_activations[to_layer]
 
             # Roll batch as negative sample
