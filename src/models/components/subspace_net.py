@@ -195,16 +195,16 @@ class SubspaceNet(nn.Module):
             )
             positive = layer_activations[to_layer]
 
-            # Roll batch as negative sample
-            negative = torch.roll(anchor, 1, 0)
+            # # Roll batch as negative sample
+            # negative = torch.roll(anchor, 1, 0)
 
             # Flatten the features
             anchor = anchor.flatten(1)
             positive = positive.flatten(1)
-            negative = negative.flatten(1)
+            # negative = negative.flatten(1)
 
             # Compute the loss
-            loss += F.triplet_margin_loss(anchor, positive, negative)
+            loss += (anchor - positive).abs()
 
         return loss / n_samples
     
