@@ -117,6 +117,10 @@ def evaluate(cfg: DictConfig) -> None:
     p = Path(cfg.ckpt_path)
     torch.save((scores, layer_names), p.parent / f"{p.stem}_scores.pt")
 
+    metric_dict = {"matrix": scores}
+
+    return metric_dict, object_dict
+
 @hydra.main(version_base="1.3", config_path="../configs", config_name="eval_all_pairs.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
