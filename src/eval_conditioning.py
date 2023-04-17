@@ -103,7 +103,6 @@ def evaluate(cfg: DictConfig) -> None:
 
         # Use the rolled inputs for 2nd round of forward
         y = x.roll(1, 0)
-        target_y = target.roll(1, 0)
 
         # Iterate over pairs of layers
         for (idx_from, layer_from), (idx_to, layer_to) in permutations(enumerate(layer_names), 2):
@@ -115,7 +114,7 @@ def evaluate(cfg: DictConfig) -> None:
             )
 
             # Find the logits
-            y_pred_logits = out_y[torch.arange(len(target_y)), target_y]
+            y_pred_logits = out_y[torch.arange(len(target)), target]
             d_total = (x_target_logits - y_target_logits).abs()
             d_change = (y_pred_logits - y_target_logits).abs()
 
