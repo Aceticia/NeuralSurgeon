@@ -11,7 +11,7 @@ from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
 from tqdm import tqdm
-from itertools import permutations
+from itertools import product
 
 pyrootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
@@ -116,7 +116,7 @@ def evaluate(cfg: DictConfig) -> None:
         y_target_logits = y_target_logits[keep_mask]
 
         # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in permutations(enumerate(layer_names), 2):
+        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), 2):
             out_y, _ = model.net.conditioned_forward_single(
                 x=y,
                 condition_dict=res_dict,
