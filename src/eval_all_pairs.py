@@ -87,6 +87,9 @@ def evaluate(cfg: DictConfig) -> None:
     scores = torch.zeros(len(layer_names), len(layer_names))
     count = 0
 
+    # Initialize datamodule
+    datamodule.setup(stage="test")
+
     # Iterate over all test data
     for batch in tqdm(datamodule.test_dataloader()):
         # Get the data
