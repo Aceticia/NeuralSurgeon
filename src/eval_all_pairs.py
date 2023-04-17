@@ -81,7 +81,7 @@ def evaluate(cfg: DictConfig) -> None:
     model.eval()
 
     # Get all layer names
-    layer_names = list(model.layer_sizes().keys())
+    layer_names = list(model.net.layer_sizes().keys())
 
     # Keep a matrix of scores
     scores = torch.zeros(len(layer_names), len(layer_names))
