@@ -103,7 +103,7 @@ def evaluate(cfg: DictConfig) -> None:
             pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
 
             # Find MAPE
-            diff = ((pred - target).abs() / (target).abs()).mean()
+            diff = (pred - target).abs().mean()
 
             # Add to the matrix
             scores[idx_from, idx_to] += diff
