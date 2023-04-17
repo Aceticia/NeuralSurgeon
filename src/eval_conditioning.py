@@ -116,7 +116,7 @@ def evaluate(cfg: DictConfig) -> None:
         y_target_logits = y_target_logits[keep_mask]
 
         # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), 2):
+        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
             out_y, _ = model.net.conditioned_forward_single(
                 x=y,
                 condition_dict=res_dict,

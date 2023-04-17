@@ -98,7 +98,7 @@ def evaluate(cfg: DictConfig) -> None:
         _, res_dict = model(x)
 
         # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), 2):
+        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
             target = res_dict[layer_to]
             pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
 
