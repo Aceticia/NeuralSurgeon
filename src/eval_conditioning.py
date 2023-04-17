@@ -116,11 +116,10 @@ def evaluate(cfg: DictConfig) -> None:
 
             # Find the logits
             y_pred_logits = out_y[torch.arange(len(target_y)), target_y]
-            d1 = (x_target_logits - y_pred_logits).abs()
-            d2 = (y_pred_logits - y_target_logits).abs()
+            d_total = (x_target_logits - y_target_logits).abs()
+            d_change = (y_pred_logits - y_target_logits).abs()
 
-            # if d1-d2 < 0, then x is able to influence y.
-            scores[idx_from, idx_to] += (d1 - d2).mean()
+            scores[idx_from, idx_to] += (d_change / d_total).mean()
             count += 1
 
     # Divide by the number of test batches
