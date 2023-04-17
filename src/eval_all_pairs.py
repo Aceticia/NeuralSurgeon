@@ -3,7 +3,6 @@ from typing import List
 from pathlib import Path
 
 import torch
-from torchmetrics.functional import mean_absolute_percentage_error
 
 import hydra
 import pyrootutils
@@ -104,7 +103,7 @@ def evaluate(cfg: DictConfig) -> None:
             pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
 
             # Find MAPE
-            diff = mean_absolute_percentage_error(pred, target)
+            diff = ((pred - target).abs() / (target).abs()).mean()
 
             # Add to the matrix
             scores[idx_from, idx_to] += diff
