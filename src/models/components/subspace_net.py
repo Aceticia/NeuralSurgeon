@@ -130,6 +130,22 @@ class SubspaceNet(nn.Module):
         x = x.mean(-1).mean(-1)
 
         return x, res_dict
+    
+    def conditioned_forward_single(
+        self,
+        x: torch.Tensor,
+        condition_dict: Dict[str, torch.Tensor],
+        layer_conditions: List[Tuple[str, str]],
+        alpha: float=1.0
+    ) -> torch.Tensor:
+        # Iterate over the layer conditions and predict the target
+        conditionings = {}
+        for from_layer, to_layer in layer_conditions:
+            pred_to_layer = self.from_to_pred(condition_dict[from_layer], from_layer, to_layer)
+            conditionings[to_layer] = pred_to_layer
+
+        # Then condition each layer
+        return self(x, conditionings, alpha=alpha)
 
     def conditioned_forward(
         self,
@@ -143,16 +159,8 @@ class SubspaceNet(nn.Module):
         """
         # First forward pass
         _, res_dict = self(x)
+        return self.conditioned_forward_single(x, res_dict, layer_conditions, alpha=alpha)
 
-        # Iterate over the layer conditions and predict the target
-        conditionings = {}
-        for from_layer, to_layer in layer_conditions:
-            pred_to_layer = self.from_to_pred(res_dict[from_layer], from_layer, to_layer)
-            conditionings[to_layer] = pred_to_layer
-
-        # Then condition each layer
-        return self(y, conditionings, alpha=alpha)
-    
     def get_pairwise_predictions(
         self,
         layer_activations: Dict[str, torch.Tensor],
