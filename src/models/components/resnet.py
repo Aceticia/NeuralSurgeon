@@ -17,28 +17,29 @@ class ResNetModel(SubspaceNet):
         self.relu = resnet_model.relu
         self.maxpool = resnet_model.maxpool
 
-        # Get the layers of the model
-        self.layer1 = resnet_model.layer1
-        self.layer2 = resnet_model.layer2
-        self.layer3 = resnet_model.layer3
-        self.layer4 = resnet_model.layer4
+        modules = OrderedDict()
+
+        # Get the internal blocks in resnet
+        for layer_idx in range(4):
+            layer_name = f"layer{layer_idx + 1}"
+
+            # Get layer from resnet
+            layer = getattr(resnet_model, layer_name)
+
+            # Iterate over the blocks in the layer
+            for block_idx, block in enumerate(layer):
+                modules[f"{layer_name}-block{block_idx}"] = block
+
+        self.blocks = nn.ModuleDict(modules)
+        self.block_keys = list(self.blocks.keys())
 
         # Freeze the conv
-        for m in [self.conv1, self.bn1, self.layer1, self.layer2, self.layer3, self.layer4]:
+        for m in [self.conv1, self.bn1, self.blocks]:
             for param in m.parameters():
                 param.requires_grad = False
 
     def layer_forward(self, x: torch.Tensor, layer: str) -> torch.Tensor:
-        if layer == "layer1":
-            return self.layer1(x)
-        elif layer == "layer2":
-            return self.layer2(x)
-        elif layer == "layer3":
-            return self.layer3(x)
-        elif layer == "layer4":
-            return self.layer4(x)
-        else:
-            raise ValueError(f"Invalid layer: {layer}")
+        return self.blocks[layer](x)
 
     def stem_forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
@@ -55,12 +56,14 @@ class ResNet18Model(ResNetModel):
         )
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
-        return OrderedDict(
-            layer1=LayerMetadata(32, 64),
-            layer2=LayerMetadata(16, 128),
-            layer3=LayerMetadata(8,  256),
-            layer4=LayerMetadata(4,  512),
-        )
+        num_blocks = [2, 2, 2, 2]
+        sizes = [(32,64), (16,128), (8,256), (4,512)]
+        res_dict = OrderedDict()
+        for layer_idx in range(4):
+            for block_idx in range(num_blocks[layer_idx]):
+                block_key = f"layer{layer_idx+1}-block{block_idx}"
+                res_dict[block_key] = LayerMetadata(*sizes[layer_idx])
+        return res_dict
 
 class ResNet50Model(ResNetModel):
     def __init__(self, subspace_size: int) -> None:
@@ -70,9 +73,11 @@ class ResNet50Model(ResNetModel):
         )
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
-        return OrderedDict(
-            layer1=LayerMetadata(32, 64),
-            layer2=LayerMetadata(16, 128),
-            layer3=LayerMetadata(8,  256),
-            layer4=LayerMetadata(4,  512),
-        )
+        num_blocks = [3, 4, 6, 3]
+        sizes = [(32,64), (16,128), (8,256), (4,512)]
+        res_dict = OrderedDict()
+        for layer_idx in range(4):
+            for block_idx in range(num_blocks[layer_idx]):
+                block_key = f"layer{layer_idx+1}-block{block_idx}"
+                res_dict[block_key] = LayerMetadata(*sizes[layer_idx])
+        return res_dict
