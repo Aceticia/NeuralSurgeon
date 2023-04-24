@@ -8,8 +8,12 @@ from collections import OrderedDict
 from src.models.components.subspace_net import SubspaceNet, LayerMetadata
 
 class ResNetModel(SubspaceNet):
-    def __init__(self, subspace_size: int, resnet_model: nn.Module) -> None:
+    constructor = None
+    def __init__(self, subspace_size: int) -> None:
         super().__init__(subspace_size=subspace_size)
+
+        # Get the model
+        resnet_model = self.constructor(weights=self.weights)
 
         # Get the stem layers of the model
         self.conv1 = resnet_model.conv1
@@ -47,14 +51,6 @@ class ResNetModel(SubspaceNet):
         x = self.relu(x)
         return self.maxpool(x)
 
-
-class ResNet18Model(ResNetModel):
-    def __init__(self, subspace_size: int) -> None:
-        super().__init__(
-            subspace_size=subspace_size,
-            resnet_model=resnet18(weights="IMAGENET1K_V1")
-        )
-
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
         num_blocks = [2, 2, 2, 2]
         sizes = [(32,64), (16,128), (8,256), (4,512)]
@@ -65,19 +61,12 @@ class ResNet18Model(ResNetModel):
                 res_dict[block_key] = LayerMetadata(*sizes[layer_idx])
         return res_dict
 
-class ResNet50Model(ResNetModel):
-    def __init__(self, subspace_size: int) -> None:
-        super().__init__(
-            subspace_size=subspace_size,
-            resnet_model=resnet50(weights="IMAGENET1K_V2")
-        )
 
-    def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
-        num_blocks = [3, 4, 6, 3]
-        sizes = [(32,64), (16,128), (8,256), (4,512)]
-        res_dict = OrderedDict()
-        for layer_idx in range(4):
-            for block_idx in range(num_blocks[layer_idx]):
-                block_key = f"layer{layer_idx+1}-block{block_idx}"
-                res_dict[block_key] = LayerMetadata(*sizes[layer_idx])
-        return res_dict
+class ResNet18Model(ResNetModel):
+    constructor = resnet18
+    weights = "IMAGENET1K_V1"
+
+
+class ResNet50Model(ResNetModel):
+    constructor = resnet50
+    weights = "IMAGENET1K_V2"
