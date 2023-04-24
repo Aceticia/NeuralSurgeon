@@ -35,7 +35,6 @@ class ResNetModel(SubspaceNet):
                 modules[f"{layer_name}-block{block_idx}"] = block
 
         self.blocks = nn.ModuleDict(modules)
-        self.block_keys = list(self.blocks.keys())
 
         # Freeze the conv
         for m in [self.conv1, self.bn1, self.blocks]:
@@ -52,11 +51,10 @@ class ResNetModel(SubspaceNet):
         return self.maxpool(x)
 
     def layer_sizes(self) -> OrderedDict[str, LayerMetadata]:
-        num_blocks = [2, 2, 2, 2]
         sizes = [(32,64), (16,128), (8,256), (4,512)]
         res_dict = OrderedDict()
         for layer_idx in range(4):
-            for block_idx in range(num_blocks[layer_idx]):
+            for block_idx in range(self.num_blocks[layer_idx]):
                 block_key = f"layer{layer_idx+1}-block{block_idx}"
                 res_dict[block_key] = LayerMetadata(*sizes[layer_idx])
         return res_dict
@@ -65,8 +63,10 @@ class ResNetModel(SubspaceNet):
 class ResNet18Model(ResNetModel):
     constructor = resnet18
     weights = "IMAGENET1K_V1"
+    num_blocks = [2, 2, 2, 2]
 
 
 class ResNet50Model(ResNetModel):
     constructor = resnet50
     weights = "IMAGENET1K_V2"
+    num_blocks = [3, 4, 6, 3]
