@@ -119,16 +119,18 @@ def evaluate(cfg: DictConfig) -> None:
                 layer_conditions=[(layer_from, layer_to)],
                 alpha=cfg.alpha
             )
-            
+
             # Find the logits for original label and condition label in the conditioned pass
             a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]
             b_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target_y]
 
-            # Find the increase in conditioned label logit
-            inc_a = (a_y_c - a_y) / (a_x - a_y)
+            # Find the increase in conditioned label logit, excluding equal
+            mask_a_equal = (a_x == a_y)
+            inc_a = (a_y_c[~mask_a_equal] - a_y[~mask_a_equal]) / (a_x[~mask_a_equal] - a_y[~mask_a_equal])
 
             # Find the decrease in original label logit
-            dec_b = (b_y_c - b_x) / (b_y - b_x)
+            mask_b_equal = (b_y == b_x)
+            dec_b = (b_y_c[~mask_b_equal] - b_x[~mask_b_equal]) / (b_y[~mask_b_equal] - b_x[~mask_b_equal])
 
             # Add to the matrix
             score_a_increase[idx_from, idx_to] += inc_a.mean()
