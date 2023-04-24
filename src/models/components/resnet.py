@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchvision.models import resnet18, resnet50
+from torchvision.models import resnet18, resnet34
 
 from collections import OrderedDict
 
@@ -66,7 +66,7 @@ class ResNet18Model(ResNetModel):
     num_blocks = [2, 2, 2, 2]
 
 
-class ResNet50Model(ResNetModel):
-    constructor = resnet50
-    weights = "IMAGENET1K_V2"
+class ResNet34Model(ResNetModel):
+    constructor = resnet34
+    weights = "IMAGENET1K_V1"
     num_blocks = [3, 4, 6, 3]
