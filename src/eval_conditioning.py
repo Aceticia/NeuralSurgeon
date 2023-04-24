@@ -96,56 +96,57 @@ def evaluate(cfg: DictConfig) -> None:
     # Initialize datamodule
     datamodule.setup(stage="test")
 
-    # Iterate over all test data
-    for batch in tqdm(datamodule.test_dataloader()):
-        # Get the data
-        x, target = batch
+    with torch.no_grad():
+        # Iterate over all test data
+        for batch in tqdm(datamodule.test_dataloader()):
+            # Get the data
+            x, target = batch
 
-        # Move to device
-        x = x.to(device)
-        target = target.to(device)
+            # Move to device
+            x = x.to(device)
+            target = target.to(device)
 
-        # Forward pass
-        out_x, res_dict = model(x)
-        out_y = out_x.roll(1, 0)
+            # Forward pass
+            out_x, res_dict = model(x)
+            out_y = out_x.roll(1, 0)
 
-        # Use the rolled inputs for 2nd round of forward
-        y = x.roll(1, 0)
-        target_y = target.roll(1, 0)
+            # Use the rolled inputs for 2nd round of forward
+            y = x.roll(1, 0)
+            target_y = target.roll(1, 0)
 
-        # Find the logits for original label and condition label in the original pass
-        a_x = out_x[torch.arange(len(out_x)), target]
-        b_x = out_x[torch.arange(len(out_x)), target_y]
+            # Find the logits for original label and condition label in the original pass
+            a_x = out_x[torch.arange(len(out_x)), target]
+            b_x = out_x[torch.arange(len(out_x)), target_y]
 
-        # Find the logits for original label and condition label in the unconditioned pass
-        a_y = out_y[torch.arange(len(out_y)), target]
-        b_y = out_y[torch.arange(len(out_y)), target_y]
+            # Find the logits for original label and condition label in the unconditioned pass
+            a_y = out_y[torch.arange(len(out_y)), target]
+            b_y = out_y[torch.arange(len(out_y)), target_y]
 
-        # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
-            out_y_tilde, _ = model.net.conditioned_forward_single(
-                x=y,
-                condition_dict=res_dict,
-                layer_conditions=[(layer_from, layer_to)],
-                alpha=cfg.alpha
-            )
+            # Iterate over pairs of layers
+            for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
+                out_y_tilde, _ = model.net.conditioned_forward_single(
+                    x=y,
+                    condition_dict=res_dict,
+                    layer_conditions=[(layer_from, layer_to)],
+                    alpha=cfg.alpha
+                )
 
-            # Find the logits for original label and condition label in the conditioned pass
-            a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]
-            b_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target_y]
+                # Find the logits for original label and condition label in the conditioned pass
+                a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]
+                b_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target_y]
 
-            # Find the increase in conditioned label logit, excluding equal
-            mask_a_equal = (a_x == a_y)
-            inc_a = (a_y_c[~mask_a_equal] - a_y[~mask_a_equal]) / (a_x[~mask_a_equal] - a_y[~mask_a_equal])
+                # Find the increase in conditioned label logit, excluding equal
+                mask_a_equal = (a_x == a_y)
+                inc_a = (a_y_c[~mask_a_equal] - a_y[~mask_a_equal]) / (a_x[~mask_a_equal] - a_y[~mask_a_equal])
 
-            # Find the decrease in original label logit
-            mask_b_equal = (b_y == b_x)
-            dec_b = (b_y_c[~mask_b_equal] - b_x[~mask_b_equal]) / (b_y[~mask_b_equal] - b_x[~mask_b_equal])
+                # Find the decrease in original label logit
+                mask_b_equal = (b_y == b_x)
+                dec_b = (b_y_c[~mask_b_equal] - b_x[~mask_b_equal]) / (b_y[~mask_b_equal] - b_x[~mask_b_equal])
 
-            # Add to the matrix
-            score_a_increase[idx_from, idx_to] += inc_a.mean()
-            score_b_decrease[idx_from, idx_to] += dec_b.mean()
-            count += 1
+                # Add to the matrix
+                score_a_increase[idx_from, idx_to] += inc_a.mean()
+                score_b_decrease[idx_from, idx_to] += dec_b.mean()
+                count += 1
 
     # Divide by the number of test batches
     score_a_increase /= count

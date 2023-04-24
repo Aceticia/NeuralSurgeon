@@ -95,28 +95,29 @@ def evaluate(cfg: DictConfig) -> None:
     # Initialize datamodule
     datamodule.setup(stage="test")
 
-    # Iterate over all test data
-    for batch in tqdm(datamodule.test_dataloader()):
-        # Get the data
-        x, _ = batch
+    with torch.no_grad():
+        # Iterate over all test data
+        for batch in tqdm(datamodule.test_dataloader()):
+            # Get the data
+            x, _ = batch
 
-        # Move to device
-        x = x.to(device)
+            # Move to device
+            x = x.to(device)
 
-        # Forward pass
-        _, res_dict = model(x)
+            # Forward pass
+            _, res_dict = model(x)
 
-        # Iterate over pairs of layers
-        for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
-            target = res_dict[layer_to]
-            pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
+            # Iterate over pairs of layers
+            for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
+                target = res_dict[layer_to]
+                pred = model.net.get_pairwise_predictions(res_dict, layer_from, layer_to)
 
-            # Find MAPE
-            diff = (pred - target).abs() / (target.abs() + 1e-8)
+                # Find MAPE
+                diff = (pred - target).abs() / (target.abs() + 1e-8)
 
-            # Add to the matrix
-            scores[idx_from, idx_to] += diff.mean()
-            count += 1
+                # Add to the matrix
+                scores[idx_from, idx_to] += diff.mean()
+                count += 1
     
     # Divide by the number of test batches
     scores /= count
