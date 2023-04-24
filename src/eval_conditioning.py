@@ -58,6 +58,12 @@ def evaluate(cfg: DictConfig) -> None:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
+    # Check device
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    # Move model to device
+    model = model.to(device)
+
     log.info("Instantiating loggers...")
     logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
 
@@ -83,8 +89,8 @@ def evaluate(cfg: DictConfig) -> None:
     layer_names = list(model.net.layer_sizes().keys())
 
     # Keep a matrix of scores
-    score_a_increase = torch.zeros(len(layer_names), len(layer_names))
-    score_b_decrease = torch.zeros(len(layer_names), len(layer_names))
+    score_a_increase = torch.zeros(len(layer_names), len(layer_names), device=device)
+    score_b_decrease = torch.zeros(len(layer_names), len(layer_names), device=device)
     count = 0
 
     # Initialize datamodule
@@ -94,6 +100,10 @@ def evaluate(cfg: DictConfig) -> None:
     for batch in tqdm(datamodule.test_dataloader()):
         # Get the data
         x, target = batch
+
+        # Move to device
+        x = x.to(device)
+        target = target.to(device)
 
         # Forward pass
         out_x, res_dict = model(x)
@@ -140,6 +150,10 @@ def evaluate(cfg: DictConfig) -> None:
     # Divide by the number of test batches
     score_a_increase /= count
     score_b_decrease /= count
+
+    # Move to cpu
+    score_a_increase = score_a_increase.cpu()
+    score_b_decrease = score_b_decrease.cpu()
 
     # Store the matrix and name with the checkpoint
     p = Path(cfg.ckpt_path)
