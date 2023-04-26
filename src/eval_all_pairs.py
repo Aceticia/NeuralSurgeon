@@ -131,8 +131,12 @@ def evaluate(cfg: DictConfig) -> None:
     scores = scores.cpu()
 
     # Store the matrix and name with the checkpoint
-    p = Path(cfg.ckpt_path)
-    torch.save((scores, layer_names), p.parent / f"{p.stem}_scores.pt")
+    p = Path(cfg.store_path)
+
+    # Create the directory if it does not exist
+    p.mkdir(parents=True, exist_ok=True)
+
+    torch.save((scores, layer_names), p / f"{p.stem}_scores.pt")
 
     metric_dict = {"matrix": scores}
 

@@ -19,3 +19,4 @@ alpha: 0.1
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: ???
+store_path: ???
