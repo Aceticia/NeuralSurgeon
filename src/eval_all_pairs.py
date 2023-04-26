@@ -124,7 +124,7 @@ def evaluate(cfg: DictConfig) -> None:
     # Create the directory if it does not exist
     p.mkdir(parents=True, exist_ok=True)
 
-    torch.save((scores, layer_names), p / f"{p.stem}_scores.pt")
+    torch.save((scores, layer_names), p / "pairwise_scores.pt")
 
     metric_dict = {"matrix": scores}
 

@@ -150,7 +150,7 @@ def evaluate(cfg: DictConfig) -> None:
     # Make the directory if not existing
     p.mkdir(parents=True, exist_ok=True)
 
-    torch.save((score_a_increase, score_b_decrease, layer_names), p / f"{p.stem}_conditioning_alpha{cfg.alpha}.pt")
+    torch.save((score_a_increase, score_b_decrease, layer_names), p / f"conditioning_alpha{cfg.alpha}.pt")
     metric_dict = {"a_increase": score_a_increase, "b_decrease": score_b_decrease}
 
     return metric_dict, object_dict
