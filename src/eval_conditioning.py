@@ -77,7 +77,7 @@ def evaluate(cfg: DictConfig) -> None:
     layer_names = list(model.net.layer_sizes().keys())
 
     # Keep a matrix of scores. 10 classes
-    size_last = model.net.layer_sizes()[layer_names[-1]]
+    size_last = model.net.layer_sizes()[layer_names[-1].num_channels]
     pre_conditioning_sensitivity_all = torch.zeros(size_last, device=device)
     post_conditioning_sensitivity_all = torch.zeros((len(layer_names), len(layer_names), size_last), device=device)
 
