@@ -26,9 +26,6 @@ spatial dimension [H, W, D], with a specified size. It should be a very small si
 
 When generating the target feature, we first generate features of size [H, W, D_target]
 and then upsample them to the target size.
-
-TODO:
-1. Allow specification of loss. Now we only use triplet loss with L2 distance.
 """
 
 import torch
