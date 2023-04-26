@@ -8,7 +8,10 @@ from collections import OrderedDict
 from src.models.components.subspace_net import SubspaceNet, LayerMetadata
 
 class ResNetModel(SubspaceNet):
-    constructor = None
+    weights: str = None
+    constructor: nn.Module = None
+    num_blocks: list[int] = None
+
     def __init__(self, subspace_size: int) -> None:
         super().__init__(subspace_size=subspace_size)
 
