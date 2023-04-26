@@ -1,3 +1,6 @@
+defaults:
+  net: resnet18
+
 _target_: src.models.cifar_module.CIFARLitModule
 
 optimizer:
@@ -5,7 +8,3 @@ optimizer:
   _partial_: true
   lr: 0.001
   weight_decay: 0.0
-
-net:
-  _target_: src.models.components.resnet.ResNet18Model
-  subspace_size: 64
