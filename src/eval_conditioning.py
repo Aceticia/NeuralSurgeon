@@ -118,7 +118,6 @@ def evaluate(cfg: DictConfig) -> None:
                     x=y,
                     condition_dict=res_dict,
                     layer_conditions=[(layer_from, layer_to)],
-                    alpha=cfg.alpha
                 )
 
                 # Find the post-conditioning sensitivity by adjusting the logit dimension order
@@ -140,7 +139,7 @@ def evaluate(cfg: DictConfig) -> None:
     # Make the directory if not existing
     p.mkdir(parents=True, exist_ok=True)
 
-    torch.save((pre_dist, post_dist, layer_names), p / f"conditioning_alpha{cfg.alpha}.pt")
+    torch.save((pre_dist, post_dist, layer_names), p / f"conditioning_{model.net.modulator}")
     metric_dict = {"pre": pre_dist, "post": post_dist}
 
     return metric_dict, object_dict

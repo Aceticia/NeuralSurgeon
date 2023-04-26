@@ -1,2 +1,3 @@
 _target_: src.models.components.resnet.ResNet34Model
 subspace_size: 64
+_partial_: True

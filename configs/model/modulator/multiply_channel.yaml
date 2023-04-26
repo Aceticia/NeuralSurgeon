@@ -1,0 +1,3 @@
+_target_: src.modulators.basic.MultiplyChannelWise
+alpha: 0.5
+beta: 1.0

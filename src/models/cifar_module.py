@@ -26,6 +26,7 @@ class CIFARLitModule(LightningModule):
         self,
         net: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
+        modulator: callable
     ):
         super().__init__()
 
@@ -33,7 +34,7 @@ class CIFARLitModule(LightningModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False, ignore=["net"])
 
-        self.net = net
+        self.net = net(modulator=modulator)
 
         # classifier
         final_size = self.net.get_final_output_size()

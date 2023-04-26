@@ -47,8 +47,10 @@ class LayerMetadata:
     num_channels: int
 
 class SubspaceNet(nn.Module):
-    def __init__(self, subspace_size: int) -> None:
+    def __init__(self, subspace_size: int, modulator: callable) -> None:
         super().__init__()
+
+        self.modulator = modulator
 
         # First get the layer sizes
         self.layer_meta_data = self.layer_sizes()
@@ -105,7 +107,6 @@ class SubspaceNet(nn.Module):
         self,
         x: torch.Tensor,
         conditioning: Dict[str, torch.Tensor] = None,
-        alpha: float = 1.0
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
 
         # Stem
@@ -119,7 +120,7 @@ class SubspaceNet(nn.Module):
             x = self.layer_forward(x, layer_name)
 
             if conditioning is not None and layer_name in conditioning:
-                x = alpha * x + (1-alpha) * conditioning[layer_name]
+                x = self.modulator(x, conditioning[layer_name])
 
             res_dict[layer_name] = x
 
@@ -133,7 +134,6 @@ class SubspaceNet(nn.Module):
         x: torch.Tensor,
         condition_dict: Dict[str, torch.Tensor],
         layer_conditions: List[Tuple[str, str]],
-        alpha: float=1.0
     ) -> torch.Tensor:
         # Iterate over the layer conditions and predict the target
         conditionings = {}
@@ -142,21 +142,20 @@ class SubspaceNet(nn.Module):
             conditionings[to_layer] = pred_to_layer
 
         # Then condition each layer
-        return self(x, conditionings, alpha=alpha)
+        return self(x, conditionings)
 
     def conditioned_forward(
         self,
         x: torch.Tensor,
         y: torch.Tensor,
         layer_conditions: List[Tuple[str, str]],
-        alpha: float=1.0
     ) -> torch.Tensor:
         """
         We condition each layer from x to y
         """
         # First forward pass
         _, res_dict = self(x)
-        return self.conditioned_forward_single(x, res_dict, layer_conditions, alpha=alpha)
+        return self.conditioned_forward_single(x, res_dict, layer_conditions)
 
     def get_pairwise_predictions(
         self,

@@ -12,8 +12,8 @@ class ResNetModel(SubspaceNet):
     constructor: nn.Module = None
     num_blocks: list[int] = None
 
-    def __init__(self, subspace_size: int) -> None:
-        super().__init__(subspace_size=subspace_size)
+    def __init__(self, subspace_size: int, modulator: callable) -> None:
+        super().__init__(subspace_size=subspace_size, modulator=modulator)
 
         # Get the model
         resnet_model = self.constructor(weights=self.weights)
