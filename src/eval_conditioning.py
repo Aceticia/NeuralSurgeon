@@ -64,23 +64,11 @@ def evaluate(cfg: DictConfig) -> None:
     # Move model to device
     model = model.to(device)
 
-    log.info("Instantiating loggers...")
-    logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
-
-    log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger)
-
     object_dict = {
         "cfg": cfg,
         "datamodule": datamodule,
         "model": model,
-        "logger": logger,
-        "trainer": trainer,
     }
-
-    if logger:
-        log.info("Logging hyperparameters!")
-        utils.log_hyperparameters(object_dict)
 
     log.info("Starting testing!")
     model.eval()
