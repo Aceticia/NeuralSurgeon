@@ -1,3 +1,3 @@
 _target_: src.modulators.basic.MultiplySpaceWise
-alpha: 0.5
-beta: 1.0
+alpha: 0.75
+beta: 1.25
