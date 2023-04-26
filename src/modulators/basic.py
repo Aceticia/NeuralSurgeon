@@ -15,6 +15,9 @@ class MultiplyChannelWise:
     alpha: float = 0.75
     beta: float = 1.25
 
+    def __str__(self) -> str:
+        return f"MultiplyChannelWise(alpha={self.alpha},beta={self.beta})"
+
     def __call__(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         b, c = y.shape[:2]
 
@@ -38,6 +41,9 @@ class MultiplyChannelWise:
 class MultiplySpaceWise:
     alpha: float = 0.75
     beta: float = 1.25
+
+    def __str__(self) -> str:
+        return f"MultiplySpaceWise(alpha={self.alpha},beta={self.beta})"
 
     def __call__(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # Find magnitude of y
