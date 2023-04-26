@@ -1,5 +1,5 @@
 defaults:
-  net: resnet18
+  - net: resnet18
 
 _target_: src.models.cifar_module.CIFARLitModule
 
