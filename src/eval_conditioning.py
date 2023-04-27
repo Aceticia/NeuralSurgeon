@@ -120,7 +120,6 @@ def evaluate(cfg: DictConfig) -> None:
                     x=y,
                     condition_dict=res_dict,
                     layer_conditions=[(layer_from, layer_to)],
-                    alpha=cfg.alpha
                 )
                 out_y_tilde = model.classifier(out_y_tilde)
 
