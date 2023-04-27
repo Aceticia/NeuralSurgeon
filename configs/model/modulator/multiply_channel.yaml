@@ -1,2 +1,2 @@
-_target_: src.modulators.basic.MultiplyChannelWise
+_target_: src.modulators.local_feats.MultiplyChannelWise
 alpha: 0.75

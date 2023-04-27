@@ -2,12 +2,13 @@ import torch
 from dataclasses import dataclass
 
 # TODO: Write generalized normalized modulator for the different multiply modulators
+# Guideline for alpha: It should be 0 when no effect of priming, and 1 when the effect is maximum
 
 @dataclass
 class Average:
     alpha: float = 0.5
     def __call__(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-        return self.alpha * x + (1-self.alpha) * y
+        return (1-self.alpha) * x + self.alpha * y
     
     def __str__(self):
         return f"Average(alpha={self.alpha})"
