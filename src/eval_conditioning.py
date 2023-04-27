@@ -99,7 +99,7 @@ def evaluate(cfg: DictConfig) -> None:
 
             # Forward pass
             out_x, res_dict = model(x)
-            out_x = model.classifier(out_x)
+            out_x = torch.softmax(model.classifier(out_x), dim=1)
             out_y = out_x.roll(1, 0)
 
             # Use the rolled inputs for 2nd round of forward
@@ -121,7 +121,7 @@ def evaluate(cfg: DictConfig) -> None:
                     condition_dict=res_dict,
                     layer_conditions=[(layer_from, layer_to)],
                 )
-                out_y_tilde = model.classifier(out_y_tilde)
+                out_y_tilde = torch.softmax(model.classifier(out_y_tilde), dim=1)
 
                 # Find the logits for original label and condition label in the conditioned pass
                 a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]

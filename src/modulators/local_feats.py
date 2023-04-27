@@ -35,10 +35,11 @@ class MultiplyChannelWise:
         y = y / y_max
 
         # Map y to [1-alpha, 1+alpha]
-        y = 1 + self.alpha * (y - 1)
+        y = 1 + self.alpha * (2*y - 1)
 
         # Multiply
         return x * y
+
 
 @dataclass
 class MultiplySpaceWise:
@@ -58,7 +59,7 @@ class MultiplySpaceWise:
         y = y / y_max
 
         # Map y to [1-alpha, 1+alpha]
-        y = 1 + self.alpha * (y - 1)
+        y = 1 + self.alpha * (2*y - 1)
 
         # Multiply
         return x * y
@@ -66,8 +67,7 @@ class MultiplySpaceWise:
 
 @dataclass
 class MultiplyGlobal:
-    alpha: float = 0.75
-    beta: float = 1.25
+    alpha: float = 0.5
 
     def __str__(self) -> str:
         return f"MultiplyGlobal(alpha={self.alpha})"
@@ -85,8 +85,8 @@ class MultiplyGlobal:
         # Normalize y
         y = y / y_max
 
-        # Map y to [alpha, beta]
-        y = self.alpha + (self.beta - self.alpha) * y
+        # Map y to [1-alpha, 1+alpha]
+        y = 1 + self.alpha * (2*y - 1)
 
         # Multiply
         return x * y
