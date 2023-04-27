@@ -1,1 +1,1 @@
-python src/train.py -m seed=0,1,2,3,4 model/net=resnet18,resnet34 model.subspace_size=64,128
+python src/train.py -m seed=0,1,2,3,4 model/net=resnet18,resnet34 model.net.subspace_size=64,128
