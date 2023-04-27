@@ -1,2 +1,2 @@
-_target_: src.modulators.basic.Average
+_target_: src.modulators.local_feats.Average
 alpha: 0.5
