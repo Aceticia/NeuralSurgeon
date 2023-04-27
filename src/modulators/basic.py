@@ -71,7 +71,7 @@ class MultiplyGlobal:
     beta: float = 1.25
 
     def __str__(self) -> str:
-        return f"MultiplySpaceWise(alpha={self.alpha},beta={self.beta})"
+        return f"MultiplyGlobal(alpha={self.alpha},beta={self.beta})"
 
     def __call__(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # Find magnitude of y
