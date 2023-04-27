@@ -1,3 +1,2 @@
 _target_: src.modulators.basic.MultiplyGlobal
 alpha: 0.75
-beta: 1.25

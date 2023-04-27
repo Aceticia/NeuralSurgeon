@@ -15,8 +15,7 @@ class Average:
 
 @dataclass
 class MultiplyChannelWise:
-    alpha: float = 0.75
-    beta: float = 1.25
+    alpha: float = 0.5
 
     def __str__(self) -> str:
         return f"MultiplyChannelWise(alpha={self.alpha},beta={self.beta})"
@@ -34,16 +33,15 @@ class MultiplyChannelWise:
         # Normalize y
         y = y / y_max
 
-        # Map y to [alpha, beta]
-        y = self.alpha + (self.beta - self.alpha) * y
+        # Map y to [1-alpha, 1+alpha]
+        y = 1 + self.alpha * (y - 1)
 
         # Multiply
         return x * y
 
 @dataclass
 class MultiplySpaceWise:
-    alpha: float = 0.75
-    beta: float = 1.25
+    alpha: float = 0.5
 
     def __str__(self) -> str:
         return f"MultiplySpaceWise(alpha={self.alpha},beta={self.beta})"
@@ -58,8 +56,8 @@ class MultiplySpaceWise:
         # Normalize y
         y = y / y_max
 
-        # Map y to [alpha, beta]
-        y = self.alpha + (self.beta - self.alpha) * y
+        # Map y to [1-alpha, 1+alpha]
+        y = 1 + self.alpha * (y - 1)
 
         # Multiply
         return x * y
