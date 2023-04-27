@@ -1,0 +1,1 @@
+python src/train.py -m seed=0,1,2,3,4,5,6,7 model/net=resnet18,resnet34 
