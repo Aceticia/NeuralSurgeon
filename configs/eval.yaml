@@ -4,8 +4,6 @@ defaults:
   - _self_
   - data: cifar.yaml # choose datamodule with `test_dataloader()` for evaluation
   - model: cifar.yaml
-  - logger: null
-  - trainer: default.yaml
   - paths: default.yaml
   - extras: default.yaml
   - hydra: default.yaml
@@ -16,3 +14,4 @@ tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: ???
+store_path: ???

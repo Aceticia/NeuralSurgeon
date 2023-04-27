@@ -130,7 +130,7 @@ def evaluate(cfg: DictConfig) -> None:
 
     return metric_dict, object_dict
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="eval_all_pairs.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
