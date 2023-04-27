@@ -76,13 +76,13 @@ def evaluate(cfg: DictConfig) -> None:
     # Get all layer names
     layer_names = list(model.net.layer_sizes().keys())
 
-    # Initialize datamodule
-    datamodule.setup(stage="test")
+    # Keep a matrix of scores. 10 classes
+    size_last = model.net.layer_sizes()[layer_names[-1]].num_channels
+    pre_conditioning_sensitivity_all = torch.zeros(size_last, device=device)
+    post_conditioning_sensitivity_all = torch.zeros((len(layer_names), len(layer_names), size_last), device=device)
 
-    # Keep a matrix of scores
-    score_a_increase = torch.zeros(len(layer_names), len(layer_names), device=device)
-    score_b_decrease = torch.zeros(len(layer_names), len(layer_names), device=device)
-    count = 0
+    count_pre = 0
+    count_post = 0
 
     # Initialize datamodule
     datamodule.setup(stage="test")
@@ -99,19 +99,18 @@ def evaluate(cfg: DictConfig) -> None:
 
             # Forward pass
             out_x, res_dict = model(x)
-            out_y = out_x.roll(1, 0)
 
             # Use the rolled inputs for 2nd round of forward
             y = x.roll(1, 0)
-            target_y = target.roll(1, 0)
+            out_y = out_x.roll(1, 0)
 
-            # Find the logits for original label and condition label in the original pass
-            a_x = out_x[torch.arange(len(out_x)), target]
-            b_x = out_x[torch.arange(len(out_x)), target_y]
+            # Find the conditioning rank
+            conditioning_rank = torch.argsort(out_x, dim=1, descending=False)
 
-            # Find the logits for original label and condition label in the unconditioned pass
-            a_y = out_y[torch.arange(len(out_y)), target]
-            b_y = out_y[torch.arange(len(out_y)), target_y]
+            # Find the pre-conditioning sensitivity by adjusting the logit dimension order
+            pre_conditioning_sensitivity = out_y.gather(1, conditioning_rank)
+            pre_conditioning_sensitivity_all += pre_conditioning_sensitivity.sum(dim=0)
+            count_pre += x.shape[0]
 
             # Iterate over pairs of layers
             for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
@@ -119,33 +118,20 @@ def evaluate(cfg: DictConfig) -> None:
                     x=y,
                     condition_dict=res_dict,
                     layer_conditions=[(layer_from, layer_to)],
-                    alpha=cfg.alpha
                 )
 
-                # Find the logits for original label and condition label in the conditioned pass
-                a_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target]
-                b_y_c = out_y_tilde[torch.arange(len(out_y_tilde)), target_y]
-
-                # Find the increase in conditioned label logit, excluding equal
-                mask_a_equal = (a_x == a_y)
-                inc_a = (a_y_c[~mask_a_equal] - a_y[~mask_a_equal]) / (a_x[~mask_a_equal] - a_y[~mask_a_equal])
-
-                # Find the decrease in original label logit
-                mask_b_equal = (b_y == b_x)
-                dec_b = (b_y_c[~mask_b_equal] - b_x[~mask_b_equal]) / (b_y[~mask_b_equal] - b_x[~mask_b_equal])
-
-                # Add to the matrix
-                score_a_increase[idx_from, idx_to] += inc_a.mean()
-                score_b_decrease[idx_from, idx_to] += dec_b.mean()
-                count += 1
+                # Find the post-conditioning sensitivity by adjusting the logit dimension order
+                post_conditioning_sensitive = out_y_tilde.gather(1, conditioning_rank)
+                post_conditioning_sensitivity_all[idx_from, idx_to] += post_conditioning_sensitive.sum(dim=0)
+                count_post += x.shape[0]
 
     # Divide by the number of test batches
-    score_a_increase /= count
-    score_b_decrease /= count
+    pre_conditioning_sensitivity_all /= count_pre
+    post_conditioning_sensitivity_all /= count_post
 
     # Move to cpu
-    score_a_increase = score_a_increase.cpu()
-    score_b_decrease = score_b_decrease.cpu()
+    pre_dist = pre_conditioning_sensitivity_all.cpu()
+    post_dist = post_conditioning_sensitivity_all.cpu()
 
     # Store the matrix and name with the checkpoint
     p = Path(cfg.store_path)
@@ -153,8 +139,8 @@ def evaluate(cfg: DictConfig) -> None:
     # Make the directory if not existing
     p.mkdir(parents=True, exist_ok=True)
 
-    torch.save((score_a_increase, score_b_decrease, layer_names), p / f"conditioning_{model.net.modulator}")
-    metric_dict = {"sharpen": score_a_increase, "dampen": score_b_decrease}
+    torch.save((pre_dist, post_dist, layer_names), p / f"gradient_{model.net.modulator}")
+    metric_dict = {"pre": pre_dist, "post": post_dist}
 
     return metric_dict, object_dict
 
