@@ -6,11 +6,10 @@ defaults:
   - _self_
 
 model_checkpoint:
-  dirpath: checkpoints/${model.net._target_}_${model.net.subspace_size}_${seed}
-  filename: "epoch_{epoch:03d}"
+  dirpath: checkpoints/
+  filename: ${model.net._target_}_${model.net.subspace_size}_${seed}
   monitor: "val/paired_pred_loss"
   mode: "min"
-  save_last: True
   auto_insert_metric_name: False
 
 early_stopping:
