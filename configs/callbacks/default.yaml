@@ -8,14 +8,14 @@ defaults:
 model_checkpoint:
   dirpath: ${paths.output_dir}/checkpoints
   filename: "epoch_{epoch:03d}"
-  monitor: "val/acc"
-  mode: "max"
+  monitor: "val/paired_pred_loss"
+  mode: "min"
   save_last: True
   auto_insert_metric_name: False
 
 early_stopping:
-  monitor: "val/acc"
-  patience: 100
+  monitor: "val/paired_pred_loss"
+  patience: 20
   mode: "max"
 
 model_summary:
