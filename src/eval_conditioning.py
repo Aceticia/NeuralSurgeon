@@ -58,6 +58,9 @@ def evaluate(cfg: DictConfig) -> None:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
+    # Creating the router
+    router = hydra.utils.instantiate(cfg.router, layer_names=model.net.layer_sizes().keys())
+
     # Check device
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -73,15 +76,12 @@ def evaluate(cfg: DictConfig) -> None:
     log.info("Starting testing!")
     model.eval()
 
-    # Get all layer names
-    layer_names = list(model.net.layer_sizes().keys())
-
     # Initialize datamodule
     datamodule.setup(stage="test")
 
     # Keep a matrix of scores
-    score_a_increase = torch.zeros(len(layer_names), len(layer_names), device=device)
-    score_b_decrease = torch.zeros(len(layer_names), len(layer_names), device=device)
+    score_a_increase = torch.zeros(len(router), device=device)
+    score_b_decrease = torch.zeros(len(router), device=device)
     count = 0
 
     # Initialize datamodule
@@ -114,12 +114,12 @@ def evaluate(cfg: DictConfig) -> None:
             a_y = out_y[torch.arange(len(out_y)), target]
             b_y = out_y[torch.arange(len(out_y)), target_y]
 
-            # Iterate over pairs of layers
-            for (idx_from, layer_from), (idx_to, layer_to) in product(enumerate(layer_names), repeat=2):
+            # Iterate over routings
+            for routing_idx, routing in enumerate(router):
                 out_y_tilde, _ = model.net.conditioned_forward_single(
                     x=y,
                     condition_dict=res_dict,
-                    layer_conditions=[(layer_from, layer_to)],
+                    layer_conditions=routing
                 )
                 out_y_tilde = torch.softmax(model.classifier(out_y_tilde), dim=1)
 
@@ -136,8 +136,8 @@ def evaluate(cfg: DictConfig) -> None:
                 dec_b = (b_y_c[~mask_b_equal] - b_x[~mask_b_equal]) / (b_y[~mask_b_equal] - b_x[~mask_b_equal])
 
                 # Add to the matrix
-                score_a_increase[idx_from, idx_to] += inc_a.mean()
-                score_b_decrease[idx_from, idx_to] += dec_b.mean()
+                score_a_increase[routing_idx] += inc_a.mean()
+                score_b_decrease[routing_idx] += dec_b.mean()
                 count += 1
 
     # Divide by the number of test batches
@@ -154,12 +154,12 @@ def evaluate(cfg: DictConfig) -> None:
     # Make the directory if not existing
     p.mkdir(parents=True, exist_ok=True)
 
-    torch.save((score_a_increase, score_b_decrease, layer_names), p / f"conditioning_{model.net.modulator}")
+    torch.save((score_a_increase, score_b_decrease, list(router)), p / f"conditioning_{model.net.modulator}_{router}")
     metric_dict = {"sharpen": score_a_increase, "dampen": score_b_decrease}
 
     return metric_dict, object_dict
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="eval_routing.yaml")
 def main(cfg: DictConfig) -> None:
     # apply extra utilities
     # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)

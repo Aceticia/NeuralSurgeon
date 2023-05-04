@@ -59,7 +59,27 @@ class CIFARLitModule(LightningModule):
         self.val_acc_best = MaxMetric()
 
     def forward(self, x: torch.Tensor):
-        return self.net(x)
+        if len(x.shape) == 4:
+            # B, C, H, W -> B, C2
+            return self.net(x)
+        elif len(x.shape) == 5:
+            # B, T, C, H, W -> B, T, C2
+            # Step by step condition
+            out_x, res_dict = self.net(x[:, 0])
+
+            # Returns
+            rets = [out_x]
+
+            # Iterate over time
+            for t in range(x.shape[1]):
+                out_x, res_dict = self.net.conditioned_forward_single(
+                    x=x[:, t],
+                    condition_dict=res_dict,
+                    layer_condition=[(1,1)]   # TODO
+                )
+                rets.append(out_x)
+
+            return torch.stack(rets, dim=1)
 
     def on_train_start(self):
         # by default lightning executes validation step sanity checks before training starts,

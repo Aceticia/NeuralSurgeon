@@ -1,0 +1,4 @@
+_target_: src.routers.neighbor.NeighrSelfRouter
+_partial_: True
+neighbor_up: False
+neighbor_skip: 0

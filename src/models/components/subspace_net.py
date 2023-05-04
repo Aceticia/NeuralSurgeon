@@ -106,7 +106,7 @@ class SubspaceNet(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        conditioning: Dict[str, torch.Tensor] = None,
+        conditioning: Dict[str, List[Tuple[torch.Tensor, str]]] = None,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
 
         # Stem
@@ -120,7 +120,9 @@ class SubspaceNet(nn.Module):
             x = self.layer_forward(x, layer_name)
 
             if conditioning is not None and layer_name in conditioning:
-                x = self.modulator(x, conditioning[layer_name])
+                for c in conditioning[layer_name]:
+                    condition_y, source_layer_name = c
+                    x = self.modulator(x, condition_y, source_layer_name, layer_name)
 
             res_dict[layer_name] = x
 
@@ -139,7 +141,10 @@ class SubspaceNet(nn.Module):
         conditionings = {}
         for from_layer, to_layer in layer_conditions:
             pred_to_layer = self.from_to_pred(condition_dict[from_layer], from_layer, to_layer)
-            conditionings[to_layer] = pred_to_layer
+            if to_layer not in conditionings:
+                conditionings[to_layer] = [(pred_to_layer, from_layer)]
+            else:
+                conditionings[to_layer].append((pred_to_layer, from_layer))
 
         # Then condition each layer
         return self(x, conditionings)

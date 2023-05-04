@@ -1,0 +1,2 @@
+_target_: src.routers.self_connection.AllSelfRouter
+_partial_: True

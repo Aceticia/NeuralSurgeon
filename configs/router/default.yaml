@@ -1,0 +1,2 @@
+_target_: src.routers.single_pairwise.SinglePairwiseRouter
+_partial_: True
